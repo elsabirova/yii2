@@ -8,11 +8,10 @@ class TestController extends Controller
 {
     public function actionIndex()
     {
-        $product = new Product(1, 'Computer', 70000, 2);
+        $product = new Product( ['id' => 1, 'name' => 'Computer', 'price' => 70000, 'created_at' => 2]);
         return $this->render('index', [
-            'data' => 111111,
+            'data' => \Yii::$app->test->get(),
             'product' => $product,
         ]);
-        //return $this->renderContent('test');
     }
 }
