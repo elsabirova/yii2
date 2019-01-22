@@ -44,7 +44,7 @@ class Product extends \yii\db\ActiveRecord
             [['name'], 'filter', 'filter' => function($value) {
                 return trim(strip_tags($value));
             }],
-            [['price'], 'integer', 'min' => 0, 'max' => 1000],
+            [['price'], 'integer', 'min' => 1, 'max' => 999],
         ];
     }
 
