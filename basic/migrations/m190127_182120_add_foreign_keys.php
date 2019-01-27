@@ -62,7 +62,7 @@ class m190127_182120_add_foreign_keys extends Migration
 
         $this->dropForeignKey(
             'fk-task-creator_id',
-            'task_'
+            'task'
         );
 
         $this->dropForeignKey(
