@@ -5,5 +5,4 @@
 ?>
 <h1>Hello!</h1>
 <?= $data?>
-<?= \yii\widgets\DetailView::widget(['model' => $product])?>
 

@@ -9,11 +9,8 @@ class TestController extends Controller
 {
     public function actionIndex()
     {
-        $product = new Product(['id' => 1, 'name' => 'Computer', 'price' => 70000, 'created_at' => 2]);
-
         return $this->render('index', [
             'data' => app()->test->get(),
-            'product' => $product,
         ]);
     }
 
