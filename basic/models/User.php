@@ -2,7 +2,9 @@
 
 namespace app\models;
 
-use Yii;
+use yii\behaviors\BlameableBehavior;
+use yii\behaviors\TimestampBehavior;
+use yii\web\IdentityInterface;
 
 /**
  * This is the model class for table "user".
@@ -20,11 +22,17 @@ use Yii;
  * @property Task[] $updatedTasks
  * @property TaskUser[] $taskUsers
  */
-class User extends \yii\db\ActiveRecord
+class User extends \yii\db\ActiveRecord implements \yii\web\IdentityInterface
 {
+    public $password;
+
     const RELATION_CREATED_TASKS    = 'createdTasks';
     const RELATION_TASK_USERS       = 'taskUsers';
     const RELATION_ACCESSED_TASKS   = 'accessedTasks';
+
+    CONST SCENARIO_CREATE = 'create';
+    CONST SCENARIO_UPDATE = 'update';
+
     /**
      * {@inheritdoc}
      */
@@ -33,15 +41,29 @@ class User extends \yii\db\ActiveRecord
         return 'user';
     }
 
+    public function behaviors() {
+        return [
+            TimestampBehavior::class,
+            [
+                'class' => BlameableBehavior::class,
+                'createdByAttribute' => 'creator_id',
+                'updatedByAttribute' => 'updater_id',
+            ],
+        ];
+    }
+
+
     /**
      * {@inheritdoc}
      */
     public function rules()
     {
         return [
-            [['username', 'password_hash', 'auth_key', 'creator_id', 'created_at'], 'required'],
+            [['username', 'password'], 'required', 'on' => self::SCENARIO_CREATE],
+            [['username'], 'required', 'on' => self::SCENARIO_UPDATE],
+
             [['creator_id', 'updater_id', 'created_at', 'updated_at'], 'integer'],
-            [['username', 'password_hash', 'auth_key'], 'string', 'max' => 255],
+            [['username', 'auth_key', 'password'], 'string', 'max' => 255],
         ];
     }
 
@@ -60,6 +82,98 @@ class User extends \yii\db\ActiveRecord
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
         ];
+    }
+
+    /**
+     * Finds an identity by the given ID.
+     *
+     * @param string|int $id the ID to be looked for
+     * @return IdentityInterface|null the identity object that matches the given ID.
+     */
+    public static function findIdentity($id)
+    {
+        return static::findOne($id);
+    }
+
+    /**
+     * Finds an identity by the given token.
+     *
+     * @param string $token the token to be looked for
+     * @return IdentityInterface|null the identity object that matches the given token.
+     */
+    public static function findIdentityByAccessToken($token, $type = null)
+    {
+        return static::findOne(['access_token' => $token]);
+    }
+
+    /**
+     * Finds user by username
+     *
+     * @param string $username
+     * @return IdentityInterface|null the identity object that matches the given username.
+     */
+    public static function findByUsername($username)
+    {
+        return static::findOne(['username' => $username]);
+    }
+
+    /**
+     * @return int current user ID
+     */
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    /**
+     * @return string current user auth key
+     */
+    public function getAuthKey()
+    {
+        return $this->auth_key;
+    }
+
+    /**
+     * @return string current user hash
+     */
+    public function getPasswordHash()
+    {
+        return $this->password_hash;
+    }
+
+    /**
+     * @param string $authKey
+     * @return bool if auth key is valid for current user
+     */
+    public function validateAuthKey($authKey)
+    {
+        return $this->getAuthKey() === $authKey;
+    }
+
+    /**
+     * Validates password
+     *
+     * @param string $password password to validate
+     * @return bool if password provided is valid for current user
+     */
+    public function validatePassword($password)
+    {
+        return app()->getSecurity()->validatePassword($password, $this->getPasswordHash()) ;
+    }
+
+    public function beforeSave($insert)
+    {
+        if (parent::beforeSave($insert)) {
+            if ($this->isNewRecord) {
+                $this->auth_key = app()->getSecurity()->generateRandomString();
+            }
+            if($this->password) {
+                $this->password_hash = app()->getSecurity()->generatePasswordHash($this->password);
+            }
+
+            return true;
+        }
+        return false;
     }
 
     /**
