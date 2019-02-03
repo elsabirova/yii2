@@ -2,11 +2,14 @@
 
 namespace app\controllers;
 
+use app\models\Task;
+use app\models\User;
 use Yii;
 use app\models\TaskUser;
 use yii\data\ActiveDataProvider;
 use yii\filters\AccessControl;
 use yii\web\Controller;
+use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 
@@ -70,18 +73,35 @@ class TaskUserController extends Controller
     /**
      * Creates a new TaskUser model.
      * If creation is successful, the browser will be redirected to the 'view' page.
+     * @param integer $taskId
      * @return mixed
      */
-    public function actionCreate()
+    public function actionCreate($taskId)
     {
         $model = new TaskUser();
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+        $task = Task::findOne($taskId);
+        if(!$task) {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+        if($task->creator_id != app()->user->id) {
+            throw new ForbiddenHttpException('The requested page is forbidden.');
         }
 
+        $model->task_id = $taskId;
+
+        if ($model->load(Yii::$app->request->post()) && $model->save()) {
+            app()->session->setFlash('success', 'Task is shared successfully');
+            return $this->redirect(['/task/my']);
+        }
+
+        $usersWithCurrentTask = TaskUser::find()->select('user_id')->where(['task_id' => $taskId]);
+        $users = User::find()->select('username')
+            ->where(['and', ['<>', 'id', app()->user->id], [ 'not in', 'id', $usersWithCurrentTask]])
+            ->indexBy('id')->column();
         return $this->render('create', [
             'model' => $model,
+            'users' => $users,
         ]);
     }
 
