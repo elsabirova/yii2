@@ -2,9 +2,12 @@
 
 use yii\helpers\Html;
 use yii\widgets\DetailView;
+use yii\grid\GridView;
 
 /* @var $this yii\web\View */
 /* @var $model app\models\Task */
+/* @var $dataProvider yii\data\ActiveDataProvider */
+/* @var bool $showUsers*/
 
 $this->title = $model->title;
 $this->params['breadcrumbs'][] = ['label' => 'Tasks', 'url' => ['my']];
@@ -38,5 +41,30 @@ $this->params['breadcrumbs'][] = $this->title;
             'updated_at',
         ],
     ]) ?>
+    <? if($showUsers): ?>
+        <?= GridView::widget([
+            'dataProvider' => $dataProvider,
+            'columns' => [
+                'id',
+                'user.username',
+                [
+                    'class' => 'yii\grid\ActionColumn',
+                    'template' => '{delete}',
+                    'buttons' => [
+                        'delete' => function ($url, \app\models\TaskUser $model) {
+                            $icon = \yii\bootstrap\Html::icon('remove');
+                            $url = ['/task-user/delete', 'id' => $model->id];
 
+                            return Html::a($icon, $url, [
+                                'data' => [
+                                    'confirm' => 'Are you sure you want to unshare this item?',
+                                    'method' => 'post',
+                                ]
+                            ]);
+                        },
+                    ]
+                ],
+            ],
+        ]); ?>
+    <? endif; ?>
 </div>

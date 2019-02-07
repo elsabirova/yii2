@@ -21,6 +21,7 @@ use yii\web\IdentityInterface;
  * @property Task[] $createdTasks
  * @property Task[] $updatedTasks
  * @property TaskUser[] $taskUsers
+ * @property Task[] $accessedTasks
  */
 class User extends \yii\db\ActiveRecord implements \yii\web\IdentityInterface
 {

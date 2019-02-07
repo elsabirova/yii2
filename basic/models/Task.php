@@ -1,8 +1,6 @@
 <?php
 
 namespace app\models;
-
-use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 
@@ -20,15 +18,17 @@ use yii\behaviors\TimestampBehavior;
  * @property User $creator
  * @property User $updater
  * @property TaskUser[] $taskUsers
+ * @property User[] $sharedUsers
  */
 class Task extends \yii\db\ActiveRecord
 {
     const RELATION_CREATOR = 'creator';
+    const RELATION_TASK_USERS = 'taskUsers';
+    const RELATION_SHARED_USERS = 'sharedUsers';
     /**
      * {@inheritdoc}
      */
-    public static function tableName()
-    {
+    public static function tableName() {
         return 'task';
     }
 
@@ -46,8 +46,7 @@ class Task extends \yii\db\ActiveRecord
     /**
      * {@inheritdoc}
      */
-    public function rules()
-    {
+    public function rules() {
         return [
             [['title', 'description'], 'required'],
             [['description'], 'string'],
@@ -61,8 +60,7 @@ class Task extends \yii\db\ActiveRecord
     /**
      * {@inheritdoc}
      */
-    public function attributeLabels()
-    {
+    public function attributeLabels() {
         return [
             'id' => 'ID',
             'title' => 'Title',
@@ -77,33 +75,37 @@ class Task extends \yii\db\ActiveRecord
     /**
      * @return \yii\db\ActiveQuery
      */
-    public function getCreator()
-    {
+    public function getCreator() {
         return $this->hasOne(User::className(), ['id' => 'creator_id']);
     }
 
     /**
      * @return \yii\db\ActiveQuery
      */
-    public function getUpdater()
-    {
+    public function getUpdater() {
         return $this->hasOne(User::className(), ['id' => 'updater_id']);
     }
 
     /**
      * @return \yii\db\ActiveQuery
      */
-    public function getTaskUsers()
-    {
+    public function getTaskUsers() {
         return $this->hasMany(TaskUser::className(), ['task_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getSharedUsers() {
+        return $this->hasMany(User::className(), ['id' => 'user_id'])
+            ->via(Task::RELATION_TASK_USERS);
     }
 
     /**
      * {@inheritdoc}
      * @return \app\models\query\TaskQuery the active query used by this AR class.
      */
-    public static function find()
-    {
+    public static function find() {
         return new \app\models\query\TaskQuery(get_called_class());
     }
 }

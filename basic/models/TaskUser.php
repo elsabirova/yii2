@@ -2,8 +2,6 @@
 
 namespace app\models;
 
-use Yii;
-
 /**
  * This is the model class for table "task_user".
  *
@@ -16,19 +14,19 @@ use Yii;
  */
 class TaskUser extends \yii\db\ActiveRecord
 {
+    const RELATION_USER = 'user';
+
     /**
      * {@inheritdoc}
      */
-    public static function tableName()
-    {
+    public static function tableName() {
         return 'task_user';
     }
 
     /**
      * {@inheritdoc}
      */
-    public function rules()
-    {
+    public function rules() {
         return [
             [['task_id', 'user_id'], 'required'],
             [['task_id', 'user_id'], 'integer'],
@@ -40,8 +38,7 @@ class TaskUser extends \yii\db\ActiveRecord
     /**
      * {@inheritdoc}
      */
-    public function attributeLabels()
-    {
+    public function attributeLabels() {
         return [
             'id' => 'ID',
             'task_id' => 'Task ID',
@@ -52,16 +49,14 @@ class TaskUser extends \yii\db\ActiveRecord
     /**
      * @return \yii\db\ActiveQuery
      */
-    public function getTask()
-    {
+    public function getTask() {
         return $this->hasOne(Task::className(), ['id' => 'task_id']);
     }
 
     /**
      * @return \yii\db\ActiveQuery
      */
-    public function getUser()
-    {
+    public function getUser() {
         return $this->hasOne(User::className(), ['id' => 'user_id']);
     }
 
@@ -69,8 +64,7 @@ class TaskUser extends \yii\db\ActiveRecord
      * {@inheritdoc}
      * @return \app\models\query\TaskUserQuery the active query used by this AR class.
      */
-    public static function find()
-    {
+    public static function find() {
         return new \app\models\query\TaskUserQuery(get_called_class());
     }
 }

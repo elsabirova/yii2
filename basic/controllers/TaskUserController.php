@@ -6,10 +6,8 @@ use app\models\Task;
 use app\models\User;
 use Yii;
 use app\models\TaskUser;
-use yii\data\ActiveDataProvider;
 use yii\filters\AccessControl;
 use yii\web\Controller;
-use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 
@@ -28,6 +26,7 @@ class TaskUserController extends Controller
                 'class' => VerbFilter::className(),
                 'actions' => [
                     'delete' => ['POST'],
+                    'deleteAll' => ['POST'],
                 ],
             ],
             'access' => [
@@ -43,100 +42,93 @@ class TaskUserController extends Controller
     }
 
     /**
-     * Lists all TaskUser models.
-     * @return mixed
-     */
-    public function actionIndex()
-    {
-        $dataProvider = new ActiveDataProvider([
-            'query' => TaskUser::find(),
-        ]);
-
-        return $this->render('index', [
-            'dataProvider' => $dataProvider,
-        ]);
-    }
-
-    /**
-     * Displays a single TaskUser model.
-     * @param integer $id
-     * @return mixed
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    public function actionView($id)
-    {
-        return $this->render('view', [
-            'model' => $this->findModel($id),
-        ]);
-    }
-
-    /**
      * Creates a new TaskUser model.
-     * If creation is successful, the browser will be redirected to the 'view' page.
+     * If creation is successful, the browser will be redirected to Shared tasks.
      * @param integer $taskId
      * @return mixed
+     * @throws NotFoundHttpException if the model cannot be found
+     * @throws \yii\web\ForbiddenHttpException
      */
     public function actionCreate($taskId)
     {
         $model = new TaskUser();
 
-        $task = Task::findOne($taskId);
-        if(!$task) {
-            throw new NotFoundHttpException('The requested page does not exist.');
-        }
-        if($task->creator_id != app()->user->id) {
-            throw new ForbiddenHttpException('The requested page is forbidden.');
-        }
+        $task = $this->findTask($taskId);
+
+        TaskController::isAvailableChange($task->creator_id);
 
         $model->task_id = $taskId;
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             app()->session->setFlash('success', 'Task is shared successfully');
-            return $this->redirect(['/task/my']);
+            return $this->redirect(['/task/shared']);
         }
 
         $usersWithCurrentTask = TaskUser::find()->select('user_id')->where(['task_id' => $taskId]);
         $users = User::find()->select('username')
-            ->where(['and', ['<>', 'id', app()->user->id], [ 'not in', 'id', $usersWithCurrentTask]])
+            ->where(['and', ['<>', 'id', app()->user->id], ['not in', 'id', $usersWithCurrentTask]])
             ->indexBy('id')->column();
         return $this->render('create', [
             'model' => $model,
             'users' => $users,
         ]);
+
     }
 
     /**
-     * Updates an existing TaskUser model.
-     * If update is successful, the browser will be redirected to the 'view' page.
-     * @param integer $id
-     * @return mixed
+     * @param $taskId
+     * @return \yii\web\Response
      * @throws NotFoundHttpException if the model cannot be found
+     * @throws \yii\web\ForbiddenHttpException
      */
-    public function actionUpdate($id)
+    public function actionDeleteAll($taskId)
     {
-        $model = $this->findModel($id);
+        $task = $this->findTask($taskId);
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+        TaskController::isAvailableChange($task->creator_id);
+
+        $result = TaskUser::deleteAll(['task_id' => $taskId]);
+        if($result) {
+            app()->session->setFlash('success', 'Task is unshared successfully for all users');
         }
 
-        return $this->render('update', [
-            'model' => $model,
-        ]);
+        return $this->redirect(['/task/shared']);
     }
 
     /**
      * Deletes an existing TaskUser model.
-     * If deletion is successful, the browser will be redirected to the 'index' page.
+     * If deletion is successful, the browser will be redirected to the '/task/view' page.
      * @param integer $id
-     * @return mixed
-     * @throws NotFoundHttpException if the model cannot be found
+     * @return \yii\web\Response
+     * @throws NotFoundHttpException if the task cannot be found
+     * @throws \Throwable
+     * @throws \yii\db\StaleObjectException
      */
     public function actionDelete($id)
     {
-        $this->findModel($id)->delete();
+        $model = $this->findModel($id);
 
-        return $this->redirect(['index']);
+        $result = $model->delete();
+        if($result)
+            app()->session->setFlash('success', 'Task is unshared successfully');
+        return $this->redirect(['/task/view', 'id' => $model->task_id]);
+
+    }
+
+    /**
+     * Finds the TaskUser model based on its primary key value.
+     * If the model is not found, a 404 HTTP exception will be thrown.
+     * @param integer $id
+     * @return Task the loaded model
+     * @throws NotFoundHttpException if the model cannot be found
+     */
+    protected function findTask($id)
+    {
+        if (($task = Task::findOne($id)) !== null) {
+            return $task;
+        }
+
+        throw new NotFoundHttpException('The requested page does not exist.');
     }
 
     /**
