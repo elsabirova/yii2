@@ -95,7 +95,7 @@ class TaskController extends Controller
         $model = $this->findModel($id);
 
         if ($model->creator_id === app()->user->id) {
-            $query = TaskUser::find()->where(['task_id' => $id])->innerJoinWith(TaskUser::RELATION_USER);
+            $query = $model->getTaskUsers();
             $dataProvider = new ActiveDataProvider([
                 'query' => $query,
             ]);
