@@ -94,7 +94,7 @@ class TaskController extends Controller
     public function actionView($id) {
         $model = $this->findModel($id);
 
-        //if ($model->creator_id === app()->user->id) {
+        if ($model->creator_id === app()->user->id) {
             $query = TaskUser::find()->where(['task_id' => $id])->innerJoinWith(TaskUser::RELATION_USER);
             $dataProvider = new ActiveDataProvider([
                 'query' => $query,
@@ -105,11 +105,11 @@ class TaskController extends Controller
                 'desc' => ['username' => SORT_DESC],
             ];
             $showUsers = true;
-       /* }
+        }
         else {
             $dataProvider = '';
             $showUsers = false;
-        }*/
+        }
         return $this->render('view', [
             'model' => $model,
             'dataProvider' => $dataProvider,

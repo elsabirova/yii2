@@ -41,7 +41,7 @@ $this->params['breadcrumbs'][] = $this->title;
             'updated_at',
         ],
     ]) ?>
-    <? if($showUsers): ?>
+    <?php if($showUsers): ?>
         <?= GridView::widget([
             'dataProvider' => $dataProvider,
             'columns' => [
@@ -66,5 +66,5 @@ $this->params['breadcrumbs'][] = $this->title;
                 ],
             ],
         ]); ?>
-    <? endif; ?>
+    <?php endif; ?>
 </div>
